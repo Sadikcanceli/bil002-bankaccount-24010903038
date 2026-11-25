@@ -1,0 +1,252 @@
+newman
+
+BIL002 BankAccount API
+
+□ 01 Hesap Açma
+└ API-01 Hesap aç (STANDARD, 1000) -> 201
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [201 Created, 812B, 742ms]
+  √  HTTP 201 dönmeli (R-1.6)
+  √  Hesap no 10 hane, ilk hane 0 değil (§2.1)
+  √  Durum ACTIVE, bakiye 1000
+
+└ Hedef hesap aç (STANDARD, 0) -> 201
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [201 Created, 806B, 134ms]
+  √  HTTP 201 dönmeli
+  √  initialBalance yoksa bakiye 0.0 (R-1.3)
+
+└ Boş bakiyeli hesap aç (kapatma testleri için)
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [201 Created, 803B, 187ms]
+  √  HTTP 201 dönmeli
+
+└ API-02 Boş ad -> 400
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [400 Bad Request, 741B, 161ms]
+  √  HTTP 400 dönmeli (R-1.1)
+  √  Hata gövdesi §7 formatında
+
+└ API-03 Geçersiz tür (küçük harf) -> 400
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [400 Bad Request, 764B, 136ms]
+  √  HTTP 400 dönmeli (R-1.2)
+
+└ API-05 Negatif başlangıç bakiyesi -> 400 [H-01]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [201 Created, 794B, 126ms]
+  1. HTTP 400 dönmeli (R-1.4)
+
+□ 02 Sorgulama
+└ API-08 Hesap sorgula -> 200
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240 [200 OK, 821B, 182ms]
+  √  HTTP 200 dönmeli (R-10.1)
+  √  Doğru hesap döndü
+
+└ API-09 Olmayan hesap -> 404 [H-13]
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/1111111111 [200 OK, 558B, 149ms]
+  2. HTTP 404 dönmeli (R-10.2)
+
+└ API-07 Tüm hesaplar -> 200
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts [200 OK, 1.63kB, 194ms]
+  √  HTTP 200 dönmeli
+  √  Dizi döndü
+
+□ 03 Para Yatırma
+└ API-10 500 TL yatır -> 200
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/deposit [200 OK, 822B, 166ms]
+  √  HTTP 200 dönmeli (R-2.5)
+  √  Bakiye 1500
+
+└ API-16 0 TL yatır -> 400 [H-02]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/deposit [200 OK, 821B, 291ms]
+  3. HTTP 400 dönmeli (R-2.2)
+
+└ API-15 10.000,01 TL yatır -> 422
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/deposit [422 Unprocessable Entity, 810B, 149ms]
+  √  HTTP 422 dönmeli (R-2.4)
+  √  Hata gövdesi §7 formatında
+
+└ API-11 amount eksik -> 400
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/deposit [400 Bad Request, 766B, 160ms]
+  √  HTTP 400 dönmeli
+
+└ API-13 Olmayan hesaba yatır -> 404
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/1111111111/deposit [404 Not Found, 782B, 166ms]
+  √  HTTP 404 dönmeli (R-2.1)
+
+□ 04 Para Çekme
+└ API-17 200 TL çek -> 200
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/withdraw [200 OK, 826B, 226ms]
+  √  HTTP 200 dönmeli (R-3.6)
+  √  Bakiye 1300
+
+└ API-20 Bakiyeden fazla çek -> 422
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/withdraw [422 Unprocessable Entity, 764B, 146ms]
+  √  HTTP 422 dönmeli (R-3.4)
+
+└ API-18 Negatif tutar -> 400
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/withdraw [400 Bad Request, 779B, 297ms]
+  √  HTTP 400 dönmeli (R-3.2)
+
+□ 05 Transfer
+└ API-35 300 TL transfer -> 200
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [200 OK, 710B, 156ms]
+  √  HTTP 200 dönmeli (R-4.6)
+  √  Başarı mesajı
+
+└ Transfer sonrası hedef bakiye 300
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/8574070572 [200 OK, 814B, 175ms]
+  √  HTTP 200 dönmeli
+  √  Hedef bakiye 300 (R-4.6)
+
+└ API-41 Aynı hesaba transfer -> 400 [H-08]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [200 OK, 717B, 149ms]
+  4. HTTP 400 dönmeli (R-4.4)
+
+└ API-38 Olmayan hedef -> 404
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [404 Not Found, 776B, 117ms]
+  √  HTTP 404 dönmeli (R-4.2)
+
+└ API-36 Eksik alan -> 400
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [400 Bad Request, 782B, 122ms]
+  √  HTTP 400 dönmeli
+
+└ API-40 Yetersiz bakiye -> 422
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [422 Unprocessable Entity, 781B, 146ms]
+  √  HTTP 422 dönmeli (R-4.5)
+
+□ 06 Geçmiş ve Faiz
+└ API-33 İşlem geçmişi -> 200, en yeni ilk
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/transactions [200 OK, 1.74kB, 131ms]
+  √  HTTP 200 dönmeli (R-9.3)
+  √  İlk kayıt en yeni (TRANSFER)
+  5. Reddedilen denemeler FAILED kaydı olarak görünmeli (R-2.7/R-3.8) [H-12]
+
+└ API-43 Alternatif yol /api/transactions/{no} -> 200
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/3014943240 [200 OK, 1.75kB, 198ms]
+  √  HTTP 200 dönmeli
+
+└ API-31 Faiz uygula (1000 TL STANDARD) -> 1002,50 [H-11]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/interest [200 OK, 820B, 142ms]
+  √  HTTP 200 dönmeli (R-8.3)
+  6. Yeni bakiye 1002,50 (R-8.3)
+
+□ 07 Hesap Durumları
+└ API-23 Dondur -> 200 FROZEN
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/freeze [200 OK, 822B, 143ms]
+  √  HTTP 200 dönmeli (R-5.2)
+  √  FROZEN
+
+└ API-25 Tekrar dondur -> 409 [H-09]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/freeze [200 OK, 819B, 130ms]
+  7. HTTP 409 dönmeli (R-5.1)
+
+└ API-14 FROZEN hesaba yatır -> 409
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/deposit [409 Conflict, 764B, 113ms]
+  √  HTTP 409 dönmeli (R-2.3)
+  √  Hata gövdesi §7 formatında
+
+└ API-21 FROZEN hesaptan çek -> 409 [H-03]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/withdraw [200 OK, 821B, 118ms]
+  8. HTTP 409 dönmeli (R-3.3)
+
+└ API-42 FROZEN hesaba transfer -> 409 [H-07]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/transactions/transfer [200 OK, 706B, 145ms]
+  9. HTTP 409 dönmeli (R-4.3)
+
+└ API-26 Dondurmayı kaldır -> 200 ACTIVE
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/unfreeze [200 OK, 819B, 123ms]
+  √  HTTP 200 dönmeli (R-6.2)
+  √  ACTIVE
+
+└ API-27 ACTIVE hesabı çöz -> 409
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/3014943240/unfreeze [409 Conflict, 781B, 135ms]
+  √  HTTP 409 dönmeli (R-6.1)
+
+└ API-30 Bakiyeli hesabı kapat -> 409 [H-10]
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/8574070572/close [200 OK, 821B, 159ms]
+ 10. HTTP 409 dönmeli (R-7.2)
+
+└ API-28 Bakiyesi 0 olan hesabı kapat -> 200 CLOSED
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/4647080465/close [200 OK, 820B, 117ms]
+  √  HTTP 200 dönmeli (R-7.3)
+  √  CLOSED
+
+└ API-29 Kapalı hesabı tekrar kapat -> 409
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/4647080465/close [409 Conflict, 744B, 152ms]
+  √  HTTP 409 dönmeli
+
+└ ST-10 Kapalı hesabı çöz -> 409
+  POST https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/4647080465/unfreeze [409 Conflict, 777B, 146ms]
+  √  HTTP 409 dönmeli (R-7.4)
+
+└ API-34 Olmayan hesabın geçmişi -> 404
+  GET https://lab.mykucukkara.com/s/<TOKEN>/api/accounts/1111111111/transactions [404 Not Found, 783B, 138ms]
+  √  HTTP 404 dönmeli (R-9.1)
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  38 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  38 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                   0 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  56 │                 10 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 9.5s                                           │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 9.48kB (approx)                               │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 172ms [min: 113ms, max: 742ms, s.d.: 101ms] │
+└────────────────────────────────────────────────────────────────────┘
+
+   #  failure         detail                                                                               
+                                                                                                           
+ 01.  AssertionError  HTTP 400 dönmeli (R-1.4)                                                             
+                      expected response to have status code 400 but got 201                                
+                      at assertion:0 in test-script                                                        
+                      inside "01 Hesap Açma / API-05 Negatif başlangıç bakiyesi -> 400 [H-01]"             
+                                                                                                           
+ 02.  AssertionError  HTTP 404 dönmeli (R-10.2)                                                            
+                      expected response to have status code 404 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "02 Sorgulama / API-09 Olmayan hesap -> 404 [H-13]"                           
+                                                                                                           
+ 03.  AssertionError  HTTP 400 dönmeli (R-2.2)                                                             
+                      expected response to have status code 400 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "03 Para Yatırma / API-16 0 TL yatır -> 400 [H-02]"                           
+                                                                                                           
+ 04.  AssertionError  HTTP 400 dönmeli (R-4.4)                                                             
+                      expected response to have status code 400 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "05 Transfer / API-41 Aynı hesaba transfer -> 400 [H-08]"                     
+                                                                                                           
+ 05.  AssertionError  Reddedilen denemeler FAILED kaydı olarak görünmeli (R-2.7/R-3.8) [H-12]              
+                      expected false to be true                                                            
+                      at assertion:2 in test-script                                                        
+                      inside "06 Geçmiş ve Faiz / API-33 İşlem geçmişi -> 200, en yeni ilk"                
+                                                                                                           
+ 06.  AssertionError  Yeni bakiye 1002,50 (R-8.3)                                                          
+                      expected 1002 to be close to 1002.5 +/- 0.001                                        
+                      at assertion:1 in test-script                                                        
+                      inside "06 Geçmiş ve Faiz / API-31 Faiz uygula (1000 TL STANDARD) -> 1002,50 [H-11]" 
+                                                                                                           
+ 07.  AssertionError  HTTP 409 dönmeli (R-5.1)                                                             
+                      expected response to have status code 409 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "07 Hesap Durumları / API-25 Tekrar dondur -> 409 [H-09]"                     
+                                                                                                           
+ 08.  AssertionError  HTTP 409 dönmeli (R-3.3)                                                             
+                      expected response to have status code 409 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "07 Hesap Durumları / API-21 FROZEN hesaptan çek -> 409 [H-03]"               
+                                                                                                           
+ 09.  AssertionError  HTTP 409 dönmeli (R-4.3)                                                             
+                      expected response to have status code 409 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "07 Hesap Durumları / API-42 FROZEN hesaba transfer -> 409 [H-07]"            
+                                                                                                           
+ 10.  AssertionError  HTTP 409 dönmeli (R-7.2)                                                             
+                      expected response to have status code 409 but got 200                                
+                      at assertion:0 in test-script                                                        
+                      inside "07 Hesap Durumları / API-30 Bakiyeli hesabı kapat -> 409 [H-10]"             
