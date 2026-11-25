@@ -4,7 +4,7 @@
 |---|---|
 | **Öğrenci Adı** | _(doldurulacak)_ |
 | **Öğrenci No** | 24010903038 |
-| **Tarih** | 26.11.2026 |
+| **Tarih** | 25.11.2026 |
 | **Kısım 1 Repo URL (BankAccount)** | https://github.com/Sadikcanceli/bil002-bankaccount-24010903038 |
 | **Kısım 2 Repo URL (Selenium + Cucumber)** | https://github.com/Sadikcanceli/bil002-selenium-cucumber-24010903038 |
 
