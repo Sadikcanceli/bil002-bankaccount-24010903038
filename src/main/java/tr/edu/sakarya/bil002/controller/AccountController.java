@@ -20,18 +20,19 @@ import tr.edu.sakarya.bil002.dto.DepositRequest;
 import tr.edu.sakarya.bil002.dto.WithdrawRequest;
 import tr.edu.sakarya.bil002.model.Account;
 import tr.edu.sakarya.bil002.model.Transaction;
-import tr.edu.sakarya.bil002.model.TransactionStatus;
-import tr.edu.sakarya.bil002.model.TransactionType;
 import tr.edu.sakarya.bil002.service.AccountService;
+import tr.edu.sakarya.bil002.service.TransactionService;
 
 @RestController
 @RequestMapping(value = "/api/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountController {
 
     private final AccountService accountService;
+    private final TransactionService transactionService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, TransactionService transactionService) {
         this.accountService = accountService;
+        this.transactionService = transactionService;
     }
 
     @PostMapping
@@ -92,17 +93,7 @@ public class AccountController {
 
     @GetMapping("/{accountNumber}/summary")
     public ResponseEntity<AccountSummary> getSummary(@PathVariable String accountNumber) {
-        List<Transaction> history = accountService.getTransactionHistory(accountNumber);
-        double deposited = 0.0;
-        double withdrawn = 0.0;
-        for (Transaction t : history) {
-            if (t.getStatus() == TransactionStatus.SUCCESS && t.getType() == TransactionType.DEPOSIT) {
-                deposited += t.getAmount();
-            }
-            if (t.getStatus() == TransactionStatus.SUCCESS && t.getType() == TransactionType.WITHDRAWAL) {
-                withdrawn += t.getAmount();
-            }
-        }
-        return ResponseEntity.ok(new AccountSummary(accountNumber, deposited, withdrawn, history.size()));
+        accountService.getAccount(accountNumber);
+        return ResponseEntity.ok(transactionService.summarize(accountNumber));
     }
 }

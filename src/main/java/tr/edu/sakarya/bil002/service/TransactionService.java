@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import tr.edu.sakarya.bil002.dto.AccountSummary;
 import tr.edu.sakarya.bil002.model.Account;
 import tr.edu.sakarya.bil002.model.Transaction;
 import tr.edu.sakarya.bil002.model.TransactionStatus;
@@ -36,6 +37,25 @@ public class TransactionService {
     @Transactional(readOnly = true)
     public List<Transaction> getHistory(String accountNumber) {
         return transactionRepository.findByAccountNumberOrderByTimestampDescIdDesc(accountNumber);
+    }
+
+    /**
+     * Hesap özeti (TDD ile eklendi): başarılı yatırma/çekme toplamları ve geçmişteki kayıt sayısı.
+     */
+    @Transactional(readOnly = true)
+    public AccountSummary summarize(String accountNumber) {
+        List<Transaction> history = getHistory(accountNumber);
+        return new AccountSummary(accountNumber,
+                successfulTotal(history, TransactionType.DEPOSIT),
+                successfulTotal(history, TransactionType.WITHDRAWAL),
+                history.size());
+    }
+
+    private static double successfulTotal(List<Transaction> history, TransactionType type) {
+        return history.stream()
+                .filter(t -> t.getStatus() == TransactionStatus.SUCCESS && t.getType() == type)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
     }
 
     @Transactional(readOnly = true)
