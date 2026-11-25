@@ -6,7 +6,7 @@
 | **Öğrenci No** | 24010903038 |
 | **Tarih** | 26.11.2026 |
 | **Kısım 1 Repo URL (BankAccount)** | https://github.com/Sadikcanceli/bil002-bankaccount-24010903038 |
-| **Kısım 2 Repo URL (Selenium + Cucumber)** | _(Kısım 2 bölümüne bakınız)_ |
+| **Kısım 2 Repo URL (Selenium + Cucumber)** | https://github.com/Sadikcanceli/bil002-selenium-cucumber-24010903038 |
 
 > Bu rapor BYS üzerinden teslim edilir (son tarih: **18 Aralık 2026 Cuma**). Bölüm 1–10 Kısım 1'i,
 > en sondaki **Kısım 2** başlığı Selenium/Cucumber çalışmasını kapsar.
@@ -635,11 +635,83 @@ teknikle yetinilseydi kritik hataların en az biri kaçardı.
 
 > Ayrıntılı gereksinimler: Ödev dokümanı, "Kısım 2 — Selenium + Cucumber"
 
-_(Kısım 2 tamamlandığında doldurulacak.)_
+**Repo:** https://github.com/Sadikcanceli/bil002-selenium-cucumber-24010903038 ·
+Yığın: Java 17, Maven, Selenium WebDriver 4.27 (Selenium Manager), Cucumber-JVM 7.18
+(`cucumber-junit-platform-engine`, `cucumber-picocontainer`), JUnit 5 Platform Suite.
+Çalıştırma: `mvn test` (varsayılan headless Chrome; `-Dtarayici=edge|firefox`, `-Dheadless=false`).
 
 ### K2.1 Seçilen Uygulama
+
+- **Site / uygulama:** SauceDemo — https://www.saucedemo.com
+- **Neden seçildi:** Test otomasyonu için yayımlanmış, herkese açık ve kararlı bir demo e-ticaret sitesi.
+  CAPTCHA, 2FA veya gerçek ödeme yok; yalnızca sitenin sayfada verdiği demo hesapları (`standard_user`,
+  `locked_out_user` / `secret_sauce`) kullanıldı. Giriş → ürünler → sepet → ödeme → onay akışı birden çok
+  sayfaya yayıldığı için gerçekçi uçtan uca senaryolar kurulabiliyor; `data-test` öznitelikleri kararlı
+  locator yazmayı kolaylaştırıyor.
+- **Test edilen akışlar (4 işlev, 7 sayfa):** (1) giriş/çıkış, (2) ürün listeleme ve sıralama,
+  (3) sepete ekleme/çıkarma ve sepet içeriği, (4) ödeme: teslimat formu, sipariş özeti tutarları ve onay.
+
 ### K2.2 Senaryo Tablosu
+
+| Feature Dosyası | Senaryo Sayısı | Pozitif/Negatif | Scenario Outline? | Kısa Açıklama |
+|---|---:|---|---|---|
+| `giris.feature` | 6 | 2 pozitif / 4 negatif | Evet (4 örnek) | Başarılı giriş; kilitli kullanıcı, yanlış şifre, boş kullanıcı adı, boş şifre uyarıları; çıkış |
+| `urunler.feature` | 5 | 5 pozitif | Evet (4 örnek) | 6 ürün ve fiyatları; A→Z, Z→A, fiyat artan, fiyat azalan sıralama ve ilk ürün doğrulaması |
+| `sepet.feature` | 3 | 3 pozitif | Hayır | Rozet sayısı artar/azalır, buton metni değişir, sepet sayfası yalnızca eklenen ürünleri listeler |
+| `odeme.feature` | 5 | 2 pozitif / 3 negatif | Evet (3 örnek) | Uçtan uca sipariş ve onay; ara toplam = fiyatlar toplamı, toplam = ara toplam + vergi; ad/soyad/posta kodu eksik uyarıları |
+| **Toplam** | **19** | **12 pozitif / 7 negatif** | **3 Outline, 11 örnek** | |
+
+Senaryolar `# language: tr` ile Türkçe Gherkin (`Özellik`, `Geçmiş`, `Senaryo taslağı`, `Diyelim ki`,
+`Eğer ki`, `O zaman`) olarak, iş diliyle yazıldı; locator veya teknik ayrıntı içermez.
+
 ### K2.3 Page Object Model Yapısı
+
+| Page Sınıfı | Sorumluluğu (hangi sayfa/eleman) |
+|---|---|
+| `BasePage` | Ortak `WebDriverWait` yardımcıları (`gorunurOlana`, `tikla`, `yaz`, `urlIcerene`), sayfa başlığı, sepet rozeti, sepet bağlantısı, menüden çıkış |
+| `LoginPage` | Giriş sayfası: kullanıcı adı, şifre, giriş butonu, hata mesajı |
+| `InventoryPage` | Ürünler sayfası: ürün adları/fiyatları, sıralama kutusu, ürün kartındaki ekle/çıkar butonu |
+| `CartPage` | Sepet sayfası: sepet satırları, ödemeye geç, alışverişe devam |
+| `CheckoutInfoPage` | Ödeme 1. adım: ad, soyad, posta kodu, devam, form uyarısı |
+| `CheckoutOverviewPage` | Ödeme 2. adım: ürün fiyatları, ara toplam, vergi, toplam etiketleri, bitir |
+| `CheckoutCompletePage` | Onay sayfası: tamamlanma başlığı, ürünlere dön |
+
+Adım tanımları (`stepdefs/`) yalnızca page metotlarını çağırır; içlerinde hiç `By` / `findElement` yoktur.
+`WebDriver` ve page nesneleri adım sınıfları arasında **PicoContainer** ile enjekte edilen `TestContext`
+üzerinden paylaşılır; `Hooks` her senaryoda yeni tarayıcı açar ve kapatır.
+
 ### K2.4 Bekleme (Wait) Stratejisi
+
+- Örtük bekleme bilinçli olarak kapatıldı (`implicitlyWait(Duration.ZERO)`) ve açık beklemeyle karışması
+  önlendi. **Tüm beklemeler `BasePage` içindeki 10 sn'lik `WebDriverWait` ile yapılır; `Thread.sleep` hiç kullanılmadı.**
+- `ExpectedConditions.visibilityOfElementLocated` → alan okuma/yazma öncesi (`gorunurOlana`, `yaz`)
+- `visibilityOfAllElementsLocatedBy` → ürün listesi, sepet satırları, fiyatlar
+- `elementToBeClickable` → tüm tıklamalar (`tikla`)
+- `urlContains` → sayfa geçişleri (her page sınıfının kurucusu kendi URL'sini bekler)
+- Lambda koşulları → sepet rozetinin beklenen sayıya gelmesi (`sepetRozetiOlana`), sıralamadan sonra
+  listenin yeniden çizilmesi, ekle/çıkar butonunun metninin değişmesi (`StaleElementReferenceException`
+  yok sayılarak)
+
 ### K2.5 Karşılaşılan Sorunlar ve Çözümler
+
+| Sorun | Belirti | Çözüm |
+|---|---|---|
+| **Bayat eleman (dinamik içerik)** | İlk koşuda sepete ekleme adımları `TimeoutException: waiting for text ('Remove')` ile 8 senaryoda düştü | SauceDemo (React) tıklamadan sonra "Add to cart" butonunu DOM'dan kaldırıp yerine yeni bir "Remove" butonu çiziyor; eldeki `WebElement` bayatlıyordu. Bekleme koşulu, butonu **her denemede ürün kartından yeniden bulacak** şekilde lambda ile yazıldı ve `StaleElementReferenceException` yok sayıldı. |
+| **Kırılgan locator** | Ürün butonlarının id'leri ürün adından türetiliyor (`add-to-cart-test.allthethings()-t-shirt-(red)`) | Id yerine ürün **adına göre kartı bulan** XPath (`inventory-item` içinde `inventory-item-name` eşleşmesi) ve kart içindeki `button` kullanıldı; locator'larda mümkün olan her yerde `data-test` öznitelikleri tercih edildi. |
+| **Sıralama sonrası zamanlama** | Sıralama seçildikten hemen sonra okunan liste eski sırada olabiliyor | Seçimden önceki ilk ürün kaydedilip liste değişene kadar bekleniyor. |
+| **Tarayıcı parola uyarısı** | Zayıf demo parolasıyla girişte Chrome/Edge "parolanız sızdırıldı" penceresi açabiliyor | `credentials_enable_service`, `password_manager_enabled`, `password_manager_leak_detection` tercihleri kapatıldı; Chrome `--guest`, Edge `--inprivate` ile açılıyor. |
+| **Ortam farkı** | Geliştirme makinesinde Chrome yok, CI'da var | `DriverFactory` tarayıcıyı `-Dtarayici` ile seçiyor; sürücüleri Selenium Manager indiriyor. Yerelde Edge, GitHub Actions'ta headless Chrome kullanıldı. |
+| **Senaryo bağımlılığı riski** | Sepet durumu senaryolar arasında taşınabilir | Her senaryo kendi tarayıcı oturumunu açıp kapatıyor (`Hooks`); başarısız senaryoda ekran görüntüsü alınıp rapora ekleniyor. |
+
 ### K2.6 Çalıştırma Sonucu
+
+```
+mvn test -Dtarayici=edge
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 43.08 s -- in tr.edu.sakarya.bil002.ui.runner.CucumberTestRunner
+[INFO] BUILD SUCCESS
+```
+
+![Cucumber HTML raporu — 19 senaryo, %100 başarılı](img/kisim2-cucumber-rapor.png)
+
+HTML raporun kendisi: Kısım 2 reposunda `docs/rapor/cucumber-report.html`. Testler ayrıca her push'ta
+GitHub Actions'ta headless Chrome ile koşar.
