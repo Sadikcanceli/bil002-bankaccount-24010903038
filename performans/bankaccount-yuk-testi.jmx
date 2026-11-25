@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BIL002 BankAccount API yük ve eşzamanlılık testi.
+  Çalıştırma (canlı servis):
+    jmeter -n -t performans/bankaccount-yuk-testi.jmx -Jprefix=/s/<TOKEN> \
+           -l performans/sonuclar/sonuclar.jtl -e -o performans/sonuclar/html-rapor \
+           -JtutarlilikDosyasi=performans/sonuclar/tutarlilik.txt
+  Yerel: -Jhost=localhost -Jport=8080 -Jprotocol=http (prefix verilmez)
+  Parametreler: kullanici (varsayılan 50), sure (sn, varsayılan 60), transferKullanici (20), tutar (10)
+-->
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="BIL002 BankAccount Yük Testi" enabled="true">
+      <stringProp name="TestPlan.comments">Senaryo 1: eşzamanlı para yatırma + bakiye tutarlılığı. Senaryo 2: eşzamanlı transfer + toplam bakiye korunumu.</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="Kullanıcı Değişkenleri" enabled="true">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+        <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
+          <collectionProp name="Arguments.arguments"/>
+        </elementProp>
+        <stringProp name="HTTPSampler.domain">${__P(host,lab.mykucukkara.com)}</stringProp>
+        <stringProp name="HTTPSampler.port">${__P(port,443)}</stringProp>
+        <stringProp name="HTTPSampler.protocol">${__P(protocol,https)}</stringProp>
+        <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+      <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+        <collectionProp name="HeaderManager.headers">
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">Content-Type</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
+          </elementProp>
+          <elementProp name="" elementType="Header">
+            <stringProp name="Header.name">User-Agent</stringProp>
+            <stringProp name="Header.value">Mozilla/5.0</stringProp>
+          </elementProp>
+        </collectionProp>
+      </HeaderManager>
+      <hashTree/>
+
+      <!-- ===================== setUp: test hesaplarını aç ===================== -->
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp - Test hesaplarını aç" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">stoptest</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="setUp - Yatırma hesabı aç (PREMIUM, 0 TL)" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"ownerName":"JMeter Yatirma","accountType":"PREMIUM","initialBalance":0}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="accountNumber -> depNo" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">depNo</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.accountNumber</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">YOK</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="setUp - Transfer hesabı A aç (5000 TL)" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"ownerName":"JMeter Transfer A","accountType":"STANDARD","initialBalance":5000}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="accountNumber -> hesapA" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">hesapA</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.accountNumber</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">YOK</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="setUp - Transfer hesabı B aç (5000 TL)" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"ownerName":"JMeter Transfer B","accountType":"STANDARD","initialBalance":5000}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="accountNumber -> hesapB" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">hesapB</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.accountNumber</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">YOK</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Hesap numaralarını ve sayaçları paylaş" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">props.put("depNo", vars.get("depNo"))
+props.put("hesapA", vars.get("hesapA"))
+props.put("hesapB", vars.get("hesapB"))
+props.put("depBasarili", new java.util.concurrent.atomic.AtomicLong(0))
+props.put("transferBasarili", new java.util.concurrent.atomic.AtomicLong(0))
+log.info("Test hesaplari: yatirma=" + vars.get("depNo") + " A=" + vars.get("hesapA") + " B=" + vars.get("hesapB"))</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+
+      <!-- ===================== Senaryo 1: eşzamanlı para yatırma ===================== -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="S1 - Eşzamanlı para yatırma + bakiye sorgulama" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(kullanici,50)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">5</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${__P(sure,60)}</stringProp>
+        <stringProp name="ThreadGroup.delay">0</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="S1 - Para yatır (POST deposit)" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"amount":${__P(tutar,10)}}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(depNo)}/deposit</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Başarılı yatırmaları say" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">if (prev.getResponseCode() == "200") {
+    props.get("depBasarili").incrementAndGet()
+}</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="S1 - Bakiye sorgula (GET account)" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(depNo)}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Düşünme süresi 100 ms" enabled="true">
+          <stringProp name="ConstantTimer.delay">100</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- ===================== Senaryo 2: eşzamanlı transfer ===================== -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="S2 - Eşzamanlı karşılıklı transfer" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(transferKullanici,20)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">2</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${__P(transferSure,30)}</stringProp>
+        <stringProp name="ThreadGroup.delay">0</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="S2 - Transfer A -&gt; B" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"fromAccount":"${__P(hesapA)}","toAccount":"${__P(hesapB)}","amount":1}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/transactions/transfer</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="S2 - Transfer B -&gt; A" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"fromAccount":"${__P(hesapB)}","toAccount":"${__P(hesapA)}","amount":1}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/transactions/transfer</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP 200" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">200</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">8</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Düşünme süresi 100 ms" enabled="true">
+          <stringProp name="ConstantTimer.delay">100</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+      </hashTree>
+
+      <!-- ===================== tearDown: tutarlılık kontrolü ===================== -->
+      <PostThreadGroup guiclass="PostThreadGroupGui" testclass="PostThreadGroup" testname="tearDown - Bakiye tutarlılığı" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </PostThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tearDown - Yatırma hesabı son bakiye" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(depNo)}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Yatırma tutarlılığı" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">def j = new groovy.json.JsonSlurper().parseText(prev.getResponseDataAsString())
+long ok = props.get("depBasarili").get()
+double tutar = Double.parseDouble(props.getProperty("tutar", "10"))
+double beklenen = ok * tutar
+double gercek = j.balance as double
+String satir = String.format(java.util.Locale.ROOT,
+    "S1 YATIRMA | basarili_istek=%d | beklenen_bakiye=%.2f | gercek_bakiye=%.2f | kayip=%.2f TL (%d islem)",
+    ok, beklenen, gercek, beklenen - gercek, Math.round((beklenen - gercek) / tutar))
+log.info(satir)
+new File(props.getProperty("tutarlilikDosyasi", "tutarlilik.txt")).append(satir + "\n", "UTF-8")</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tearDown - Yatırma hesabı işlem geçmişi" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(depNo)}/transactions</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="İşlem kaydı sayısı" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">def liste = new groovy.json.JsonSlurper().parseText(prev.getResponseDataAsString())
+def basarili = liste.findAll { it.status == "SUCCESS" }
+double kayitToplami = basarili.sum(0.0) { it.amount as double }
+String satir = String.format(java.util.Locale.ROOT,
+    "S1 KAYITLAR | SUCCESS_DEPOSIT_kaydi=%d | kayitlardaki_toplam=%.2f | son_kaydin_balanceAfter=%.2f",
+    basarili.size(), kayitToplami, liste ? (liste[0].balanceAfter as double) : 0.0d)
+log.info(satir)
+new File(props.getProperty("tutarlilikDosyasi", "tutarlilik.txt")).append(satir + "\n", "UTF-8")</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tearDown - Transfer hesabı A" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(hesapA)}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="balance -> bakiyeA" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">bakiyeA</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.balance</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">0</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tearDown - Transfer hesabı B" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.path">${__P(prefix,)}/api/accounts/${__P(hesapB)}</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="balance -> bakiyeB" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">bakiyeB</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.balance</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">0</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Transfer toplam bakiye korunumu" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">double a = Double.parseDouble(vars.get("bakiyeA"))
+double b = Double.parseDouble(vars.get("bakiyeB"))
+String satir = String.format(java.util.Locale.ROOT,
+    "S2 TRANSFER | bakiyeA=%.2f | bakiyeB=%.2f | toplam=%.2f | beklenen_toplam=10000.00 | fark=%.2f TL",
+    a, b, a + b, 10000.0d - (a + b))
+log.info(satir)
+new File(props.getProperty("tutarlilikDosyasi", "tutarlilik.txt")).append(satir + "\n", "UTF-8")</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

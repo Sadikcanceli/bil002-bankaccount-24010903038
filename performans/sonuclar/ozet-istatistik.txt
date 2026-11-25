@@ -1,0 +1,14 @@
+Etiket | N | Ort(ms) | p90(ms) | p95(ms) | Maks(ms) | Istek/sn | Hata% | Hata kodlari
+S1 - Bakiye sorgula (GET account) | 6254 | 118.9 | 152 | 179 | 568 | 105.0 | 0.00 | -
+S1 - Para yatır (POST deposit) | 6276 | 124.3 | 165 | 195 | 482 | 104.8 | 0.00 | -
+S2 - Transfer A -> B | 1327 | 112.8 | 146 | 156 | 393 | 44.4 | 3.84 | {'500': 51}
+S2 - Transfer B -> A | 1317 | 111.2 | 144 | 152 | 495 | 44.5 | 2.51 | {'500': 33}
+setUp - Transfer hesabı A aç (5000 TL) | 1 | 103.0 | 103 | 103 | 103 | 1.0 | 0.00 | -
+setUp - Transfer hesabı B aç (5000 TL) | 1 | 107.0 | 107 | 107 | 107 | 1.0 | 0.00 | -
+setUp - Yatırma hesabı aç (PREMIUM, 0 TL) | 1 | 492.0 | 492 | 492 | 492 | 1.0 | 0.00 | -
+tearDown - Transfer hesabı A | 1 | 103.0 | 103 | 103 | 103 | 1.0 | 0.00 | -
+tearDown - Transfer hesabı B | 1 | 103.0 | 103 | 103 | 103 | 1.0 | 0.00 | -
+tearDown - Yatırma hesabı işlem geçmişi | 1 | 1648.0 | 1648 | 1648 | 1648 | 1.0 | 0.00 | -
+tearDown - Yatırma hesabı son bakiye | 1 | 159.0 | 159 | 159 | 159 | 1.0 | 0.00 | -
+TOPLAM S1 | 12530 | 121.6 | 158 | 189 | 568 | 209.1 | 0.00 | sure=60s
+TOPLAM S2 | 2644 | 112.0 | 145 | 154 | 495 | 88.4 | 3.18 | sure=30s

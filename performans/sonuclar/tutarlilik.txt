@@ -1,0 +1,3 @@
+S1 YATIRMA | basarili_istek=6276 | beklenen_bakiye=62760.00 | gercek_bakiye=37840.00 | kayip=24920.00 TL (2492 islem)
+S1 KAYITLAR | SUCCESS_DEPOSIT_kaydi=6276 | kayitlardaki_toplam=62760.00 | son_kaydin_balanceAfter=37840.00
+S2 TRANSFER | bakiyeA=5024.00 | bakiyeB=4966.00 | toplam=9990.00 | beklenen_toplam=10000.00 | fark=10.00 TL
