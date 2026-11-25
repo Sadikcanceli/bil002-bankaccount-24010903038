@@ -15,10 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import tr.edu.sakarya.bil002.dto.AccountCreateRequest;
+import tr.edu.sakarya.bil002.dto.AccountSummary;
 import tr.edu.sakarya.bil002.dto.DepositRequest;
 import tr.edu.sakarya.bil002.dto.WithdrawRequest;
 import tr.edu.sakarya.bil002.model.Account;
 import tr.edu.sakarya.bil002.model.Transaction;
+import tr.edu.sakarya.bil002.model.TransactionStatus;
+import tr.edu.sakarya.bil002.model.TransactionType;
 import tr.edu.sakarya.bil002.service.AccountService;
 
 @RestController
@@ -85,5 +88,21 @@ public class AccountController {
     @GetMapping("/{accountNumber}/transactions")
     public ResponseEntity<List<Transaction>> getTransactions(@PathVariable String accountNumber) {
         return ResponseEntity.ok(accountService.getTransactionHistory(accountNumber));
+    }
+
+    @GetMapping("/{accountNumber}/summary")
+    public ResponseEntity<AccountSummary> getSummary(@PathVariable String accountNumber) {
+        List<Transaction> history = accountService.getTransactionHistory(accountNumber);
+        double deposited = 0.0;
+        double withdrawn = 0.0;
+        for (Transaction t : history) {
+            if (t.getStatus() == TransactionStatus.SUCCESS && t.getType() == TransactionType.DEPOSIT) {
+                deposited += t.getAmount();
+            }
+            if (t.getStatus() == TransactionStatus.SUCCESS && t.getType() == TransactionType.WITHDRAWAL) {
+                withdrawn += t.getAmount();
+            }
+        }
+        return ResponseEntity.ok(new AccountSummary(accountNumber, deposited, withdrawn, history.size()));
     }
 }
