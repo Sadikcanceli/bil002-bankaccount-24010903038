@@ -1,5 +1,9 @@
 # BankAccount API — BIL 002 Yazılım Doğrulama ve Sınama Dönem Projesi
 
+[![BIL002 CI Pipeline](https://github.com/Sadikcanceli/bil002-bankaccount-24010903038/actions/workflows/ci.yml/badge.svg)](https://github.com/Sadikcanceli/bil002-bankaccount-24010903038/actions/workflows/ci.yml)
+
+> **Test raporu:** [docs/RAPOR.md](docs/RAPOR.md)
+
 BankAccount API, hesap açma, para yatırma/çekme, hesaplar arası transfer, hesap dondurma/kapatma
 ve aylık faiz hesaplama işlemlerini sunan basit bir banka hesap yönetim REST servisidir. Uygulama
 Spring Boot 3 ve H2 bellek içi veritabanı ile geliştirilmiştir. **Uygulamada bilerek bırakılmış
