@@ -423,7 +423,25 @@ Hatayı yakalayan tüm testler `@Tag("hata")` / `@hata` ile etiketlendiği için
 
 ![GitHub Actions çalışması](img/ci-pipeline.png)
 
-![@hata özeti](img/ci-hata-ozeti.png)
+Ekran görüntüsündeki "1 error" notu, `continue-on-error: true` olan **@hata adımından** gelir (kırmızı
+olması beklenen testler); işin (job) ve pipeline'ın sonucu **Success**'tir.
+
+**Summary sayfasındaki @hata özeti** (çalışma #8, `gh run view 45563156693 --log` çıktısından):
+
+```
+Testleri çalıştır (mvn -B test -DexcludedGroups=hata)
+  [INFO] Tests run: 132, Failures: 0, Errors: 0, Skipped: 0          -> yeşil (zorunlu adım)
+Bulunan hata testlerini çalıştır (@hata) (mvn -B test -Dgroups=hata)
+  [ERROR] Tests run: 46, Failures: 43, Errors: 3, Skipped: 0         -> kırmızı (beklenen)
+Bulunan hata testlerinin özeti
+  @hata testleri: toplam=46, kirmizi=46
+```
+
+| Bulunan hata testleri (@hata) | |
+|---|---|
+| Toplam | **46** |
+| Hatayı yakalayan (kırmızı) | **46** |
+| Geçen (hata artık yakalanmıyor olabilir) | **0** |
 
 ---
 
