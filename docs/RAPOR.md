@@ -700,7 +700,7 @@ Adım tanımları (`stepdefs/`) yalnızca page metotlarını çağırır; içler
 | **Kırılgan locator** | Ürün butonlarının id'leri ürün adından türetiliyor (`add-to-cart-test.allthethings()-t-shirt-(red)`) | Id yerine ürün **adına göre kartı bulan** XPath (`inventory-item` içinde `inventory-item-name` eşleşmesi) ve kart içindeki `button` kullanıldı; locator'larda mümkün olan her yerde `data-test` öznitelikleri tercih edildi. |
 | **Sıralama sonrası zamanlama** | Sıralama seçildikten hemen sonra okunan liste eski sırada olabiliyor | Seçimden önceki ilk ürün kaydedilip liste değişene kadar bekleniyor. |
 | **Tarayıcı parola uyarısı** | Zayıf demo parolasıyla girişte Chrome/Edge "parolanız sızdırıldı" penceresi açabiliyor | `credentials_enable_service`, `password_manager_enabled`, `password_manager_leak_detection` tercihleri kapatıldı; Chrome `--guest`, Edge `--inprivate` ile açılıyor. |
-| **Ortam farkı** | Geliştirme makinesinde Chrome yok, CI'da var | `DriverFactory` tarayıcıyı `-Dtarayici` ile seçiyor; sürücüleri Selenium Manager indiriyor. Yerelde headless Edge ile koşuldu; varsayılan tarayıcı headless Chrome'dur. |
+| **Ortam farkı** | Geliştirme makinesinde Chrome kurulu değil (varsayılan tarayıcı Chrome) | `DriverFactory` tarayıcıyı `-Dtarayici` ile seçiyor; sürücüleri Selenium Manager indiriyor. Yerelde headless Edge ile koşuldu; varsayılan tarayıcı headless Chrome'dur. |
 | **Senaryo bağımlılığı riski** | Sepet durumu senaryolar arasında taşınabilir | Her senaryo kendi tarayıcı oturumunu açıp kapatıyor (`Hooks`); başarısız senaryoda ekran görüntüsü alınıp rapora ekleniyor. |
 
 ### K2.6 Çalıştırma Sonucu
