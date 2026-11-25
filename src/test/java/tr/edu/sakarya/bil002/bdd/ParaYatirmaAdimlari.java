@@ -14,66 +14,74 @@ import tr.edu.sakarya.bil002.model.TransactionType;
 import tr.edu.sakarya.bil002.service.AccountService;
 
 /**
- * ÖRNEK adım tanımları: src/test/resources/features/ornek_senaryo.feature için yazılmıştır.
- * Kendi senaryolarınız için bu sınıfa benzer yeni sınıflar ekleyin.
+ * Para yatırma adımları (ornek_senaryo.feature ve para_yatirma.feature). Senaryo durumu
+ * SenaryoBaglami üzerinden diğer adım sınıflarıyla paylaşılır; böylece "işlem reddedilmeli" gibi
+ * ortak adımlar tüm feature dosyalarında kullanılabilir.
  */
 public class ParaYatirmaAdimlari {
 
     @Autowired
     private AccountService accountService;
 
-    private Account hesap;
-    private double oncekiBakiye;
-    private Exception yakalananHata;
+    @Autowired
+    private SenaryoBaglami baglam;
 
     @Given("aktif bir hesap mevcut ve bakiyesi {int} TL")
     public void aktifBirHesapMevcut(int bakiye) {
-        hesap = accountService.createAccount("Örnek Müşteri", "STANDARD", (double) bakiye);
+        Account hesap = accountService.createAccount("Örnek Müşteri", "STANDARD", (double) bakiye);
+        baglam.hesapEkle("hesap", hesap.getAccountNumber());
     }
 
     @Given("dondurulmuş bir hesap mevcut")
     public void dondurulmusBirHesapMevcut() {
-        hesap = accountService.createAccount("Örnek Müşteri", "STANDARD", 250.0);
+        Account hesap = accountService.createAccount("Örnek Müşteri", "STANDARD", 250.0);
         accountService.freezeAccount(hesap.getAccountNumber());
+        baglam.hesapEkle("hesap", hesap.getAccountNumber());
     }
 
     @When("hesaba {int} TL yatırılır")
     public void hesabaParaYatirilir(int tutar) {
-        accountService.deposit(hesap.getAccountNumber(), (double) tutar);
+        accountService.deposit(baglam.getAktifHesapNo(), (double) tutar);
     }
 
     @When("hesaba {int} TL yatırılmaya çalışılır")
     public void hesabaParaYatirilmayaCalisilir(int tutar) {
-        oncekiBakiye = accountService.getAccount(hesap.getAccountNumber()).getBalance();
+        hesabaTutarYatirilmayaCalisilir((double) tutar);
+    }
+
+    @When("hesaba {double} TL yatırılmak istenir")
+    public void hesabaTutarYatirilmayaCalisilir(double tutar) {
+        baglam.setOncekiBakiye(accountService.getAccount(baglam.getAktifHesapNo()).getBalance());
+        baglam.setSonHata(null);
         try {
-            accountService.deposit(hesap.getAccountNumber(), (double) tutar);
+            accountService.deposit(baglam.getAktifHesapNo(), tutar);
         } catch (Exception e) {
-            yakalananHata = e;
+            baglam.setSonHata(e);
         }
     }
 
     @Then("bakiye {int} TL olmalı")
     public void bakiyeOlmali(int beklenen) {
-        double gercek = accountService.getAccount(hesap.getAccountNumber()).getBalance();
+        double gercek = accountService.getAccount(baglam.getAktifHesapNo()).getBalance();
         assertEquals(beklenen, gercek, 0.001);
     }
 
     @Then("işlem geçmişinde {word} kaydı bulunmalı")
     public void islemGecmisindeKayitBulunmali(String tip) {
         TransactionType beklenenTip = TransactionType.valueOf(tip);
-        boolean varMi = accountService.getTransactionHistory(hesap.getAccountNumber()).stream()
+        boolean varMi = accountService.getTransactionHistory(baglam.getAktifHesapNo()).stream()
                 .anyMatch(t -> t.getType() == beklenenTip);
         assertTrue(varMi, "İşlem geçmişinde " + tip + " kaydı bulunamadı");
     }
 
     @Then("işlem reddedilmeli")
     public void islemReddedilmeli() {
-        assertNotNull(yakalananHata, "İşlemin reddedilmesi bekleniyordu ama başarılı oldu");
+        assertNotNull(baglam.getSonHata(), "İşlemin reddedilmesi bekleniyordu ama başarılı oldu");
     }
 
     @Then("bakiye değişmemeli")
     public void bakiyeDegismemeli() {
-        double gercek = accountService.getAccount(hesap.getAccountNumber()).getBalance();
-        assertEquals(oncekiBakiye, gercek, 0.001);
+        double gercek = accountService.getAccount(baglam.getAktifHesapNo()).getBalance();
+        assertEquals(baglam.getOncekiBakiye(), gercek, 0.001);
     }
 }
