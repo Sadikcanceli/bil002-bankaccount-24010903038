@@ -1,0 +1,15 @@
+[ERROR] Tests run: 4, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 10.95 s <<< FAILURE! -- in tr.edu.sakarya.bil002.tdd.AccountSummaryTddTest
+[ERROR] tr.edu.sakarya.bil002.tdd.AccountSummaryTddTest.ozet_transferVeFaizToplamlaraGirmez -- Time elapsed: 1.497 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<404>
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+[ERROR] tr.edu.sakarya.bil002.tdd.AccountSummaryTddTest.ozet_toplamlarVeIslemSayisi -- Time elapsed: 0.072 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<404>
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+[ERROR] tr.edu.sakarya.bil002.tdd.AccountSummaryTddTest.ozet_islemsizHesap_sifirlar -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<404>
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+[ERROR]   AccountSummaryTddTest.ozet_islemsizHesap_sifirlar:63 Status expected:<200> but was:<404>
+[ERROR]   AccountSummaryTddTest.ozet_toplamlarVeIslemSayisi:51 Status expected:<200> but was:<404>
+[ERROR]   AccountSummaryTddTest.ozet_transferVeFaizToplamlaraGirmez:79 Status expected:<200> but was:<404>
+[ERROR] Tests run: 4, Failures: 3, Errors: 0, Skipped: 0
+[INFO] BUILD FAILURE
